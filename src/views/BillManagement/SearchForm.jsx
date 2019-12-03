@@ -1,32 +1,48 @@
 import React from 'react'
 import { Form, Select, Button } from 'antd';
+import axios from 'axios'
+
 const { Option } = Select
 
 function hasErrors(fieldsError) {
   return Object.keys(fieldsError).some(field => fieldsError[field]);
 }
 
-function handleChange(value) {
-  console.log(`selected ${value}`);
-}
-
 class SearchForm extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      typeOptions: [],
+      selectType: ''
+    }
+  }
+
+  handleChange = (value) => {
+    this.setState({
+      selectType: value
+    })
+  }
+
   componentDidMount() {
-    // To disabled submit button at the beginning.
     this.props.form.validateFields();
+    axios.get('/type/list').then(res => {
+      this.setState({
+        typeOptions: res.data.data
+      })
+    })
   }
 
   handleSubmit = e => {
     e.preventDefault();
     this.props.form.validateFields((err, values) => {
       if (!err) {
-        console.log('Received values of form: ', values);
+        this.props.onSubmit(this.state.selectType)
       }
     });
   }
 
   render() {
-    const { getFieldDecorator, getFieldsError, getFieldError, isFieldTouched } = this.props.form;
+    const { getFieldsError, getFieldError, isFieldTouched } = this.props.form;
 
     // Only show error after a field is touched.
     const typeError = isFieldTouched('type') && getFieldError('type');
@@ -34,18 +50,15 @@ class SearchForm extends React.Component {
     return (
       <Form layout="inline" onSubmit={this.handleSubmit}>
         <Form.Item validateStatus={typeError ? 'error' : ''} help={typeError || ''}>
-          {getFieldDecorator('type', {
-            rules: [{ required: true, message: 'Please input your type!' }],
-          })(
-            <Select style={{ width: 120 }} onChange={handleChange}>
-              <Option value="jack">Jack</Option>
-              <Option value="lucy">Lucy</Option>
-              <Option value="disabled" disabled>
-                Disabled
-              </Option>
-              <Option value="Yiminghe">yiminghe</Option>
-            </Select>
-          )}
+          <Select allowClear={true} style={{ width: 120 }} onChange={this.handleChange}>
+            {
+              this.state.typeOptions.map((item, index) => {
+                return (
+                  <Option value={item.value} key={index}>{item.label}</Option>
+                )
+              })
+            }
+          </Select>
         </Form.Item>
 
         <Form.Item>
